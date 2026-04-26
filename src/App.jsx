@@ -1,5 +1,5 @@
-import React, { useMemo, useState, useEffect, useCallback } from 'react';
-import { Heart, Briefcase, GraduationCap, Info, Smartphone, StickyNote, Cloud, Loader2, AlertTriangle, CloudOff } from 'lucide-react';
+import React, { useMemo, useState, useEffect } from 'react';
+import { Heart, Briefcase, GraduationCap, Info, Smartphone, StickyNote, Cloud, Loader2, Save, CheckCircle } from 'lucide-react';
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'firebase/auth';
 import { getFirestore, doc, setDoc, onSnapshot } from 'firebase/firestore';
@@ -63,6 +63,7 @@ export default function App() {
   const [notes, setNotes] = useState({});
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
+  const [lastSaved, setLastSaved] = useState(null);
 
   // Autenticación inicial
   useEffect(() => {
@@ -114,19 +115,23 @@ export default function App() {
     return () => unsubscribe();
   }, [user]);
 
-  // Guardado optimista: Actualiza la pantalla y luego la nube
+  // Cambio local de la nota (sin guardar aún en la nube)
   const handleNoteChange = (monthIndex, value) => {
-    const newNotes = { ...notes, [monthIndex]: value };
-    setNotes(newNotes);
-    saveToCloud(newNotes);
+    setNotes(prev => ({
+      ...prev,
+      [monthIndex]: value
+    }));
+    setLastSaved(null); // Resetear estado de guardado al escribir
   };
 
-  const saveToCloud = async (updatedNotes) => {
+  // Función para guardar manualmente en la nube
+  const handleSaveNotes = async () => {
     if (!user) return;
     setSyncing(true);
     try {
       const notesDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'calendar_notes', 'notes_doc');
-      await setDoc(notesDocRef, updatedNotes);
+      await setDoc(notesDocRef, notes);
+      setLastSaved(new Date().toLocaleTimeString());
     } catch (err) {
       console.error("Error guardando en nube:", err);
     } finally {
@@ -182,7 +187,7 @@ export default function App() {
       mesesVisuales.push({ nombre: MESES[m], semanas });
     }
     return { meses: mesesVisuales, totalCoincidencias: contadorCoincidencias };
-  }, []);
+  }, [user]);
 
   if (loading) {
     return (
@@ -210,9 +215,13 @@ export default function App() {
                <div className="flex items-center gap-1 text-[10px] font-bold text-blue-500 uppercase">
                  <Loader2 size={12} className="animate-spin" /> Guardando...
                </div>
-            ) : (
+            ) : lastSaved ? (
               <div className="flex items-center gap-1 text-[10px] font-bold text-emerald-500 uppercase">
-                <Cloud size={14} /> Sincronizado
+                <CheckCircle size={14} /> Guardado {lastSaved}
+              </div>
+            ) : (
+              <div className="flex items-center gap-1 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                <Cloud size={14} /> Nube Activa
               </div>
             )}
           </div>
@@ -225,7 +234,7 @@ export default function App() {
             <h2 className="text-3xl md:text-5xl font-black mb-4 tracking-tight uppercase italic text-white leading-tight">
               Calendario <br className="md:hidden" /> Nico y Flor
             </h2>
-            <p className="text-slate-400 text-lg max-w-xl mb-8 leading-tight text-slate-400">
+            <p className="text-slate-400 text-lg max-w-xl mb-8 leading-tight">
               Nuestro espacio compartido para organizar el 2026 y disfrutar cada momento.
             </p>
             
@@ -311,8 +320,17 @@ export default function App() {
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2 text-slate-400">
                       <StickyNote size={14} className="group-hover:text-indigo-500 transition-colors" />
-                      <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Notas de {mes.nombre}</span>
+                      <span className="text-[10px] font-black uppercase tracking-widest">Notas de {mes.nombre}</span>
                     </div>
+                    {/* Botón de Guardado */}
+                    <button 
+                      onClick={handleSaveNotes}
+                      disabled={syncing}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-red-50 text-slate-600 hover:text-red-600 rounded-lg text-[9px] font-bold uppercase transition-all"
+                    >
+                      {syncing ? <Loader2 size={10} className="animate-spin" /> : <Save size={10} />}
+                      Guardar Notas
+                    </button>
                   </div>
                   <textarea
                     className="w-full bg-slate-50 border-2 border-transparent rounded-[1.5rem] p-4 text-xs text-slate-600 placeholder:text-slate-300 focus:bg-white focus:border-red-100 focus:ring-0 transition-all resize-none min-h-[90px] shadow-inner"
@@ -328,11 +346,11 @@ export default function App() {
       </main>
 
       <footer className="text-center py-12 border-t border-slate-200 bg-white mt-16 shadow-inner text-slate-400">
-        <div className="flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] mb-2 text-slate-400">
+        <div className="flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] mb-2">
           <Info size={12} />
           <span>Sincronizado en tiempo real</span>
         </div>
-        <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Nico & Flor 2026</p>
+        <p className="text-[9px] font-bold uppercase tracking-widest">Nico & Flor 2026</p>
       </footer>
     </div>
   );
