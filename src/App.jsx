@@ -116,11 +116,8 @@ export default function App() {
 
   // Guardado optimista: Actualiza la pantalla y luego la nube
   const handleNoteChange = (monthIndex, value) => {
-    // 1. Actualizamos el estado local inmediatamente para que se vea lo que escribís
     const newNotes = { ...notes, [monthIndex]: value };
     setNotes(newNotes);
-    
-    // 2. Disparamos el guardado en la nube
     saveToCloud(newNotes);
   };
 
@@ -228,7 +225,7 @@ export default function App() {
             <h2 className="text-3xl md:text-5xl font-black mb-4 tracking-tight uppercase italic text-white leading-tight">
               Calendario <br className="md:hidden" /> Nico y Flor
             </h2>
-            <p className="text-slate-400 text-lg max-w-xl mb-8 leading-tight">
+            <p className="text-slate-400 text-lg max-w-xl mb-8 leading-tight text-slate-400">
               Nuestro espacio compartido para organizar el 2026 y disfrutar cada momento.
             </p>
             
@@ -314,7 +311,7 @@ export default function App() {
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2 text-slate-400">
                       <StickyNote size={14} className="group-hover:text-indigo-500 transition-colors" />
-                      <span className="text-[10px] font-black uppercase tracking-widest">Notas de {mes.nombre}</span>
+                      <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Notas de {mes.nombre}</span>
                     </div>
                   </div>
                   <textarea
@@ -331,11 +328,11 @@ export default function App() {
       </main>
 
       <footer className="text-center py-12 border-t border-slate-200 bg-white mt-16 shadow-inner text-slate-400">
-        <div className="flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] mb-2">
+        <div className="flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] mb-2 text-slate-400">
           <Info size={12} />
           <span>Sincronizado en tiempo real</span>
         </div>
-        <p className="text-[9px] font-bold uppercase tracking-widest">Nico & Flor 2026</p>
+        <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Nico & Flor 2026</p>
       </footer>
     </div>
   );
