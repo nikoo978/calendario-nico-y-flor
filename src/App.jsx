@@ -1,5 +1,5 @@
-import React, { useMemo, useState, useEffect } from 'react';
-import { Heart, Briefcase, GraduationCap, Info, Smartphone, StickyNote, Cloud, Loader2, Save, CheckCircle } from 'lucide-react';
+import { useMemo, useState, useEffect } from 'react';
+import { Heart, Briefcase, GraduationCap, Info, StickyNote, Cloud, Loader2, Save, CheckCircle } from 'lucide-react';
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'firebase/auth';
 import { getFirestore, doc, setDoc, onSnapshot } from 'firebase/firestore';
@@ -20,7 +20,7 @@ try {
   firebaseConfig = typeof __firebase_config !== 'undefined' 
     ? JSON.parse(__firebase_config) 
     : miConfiguracionLocal;
-} catch (e) {
+} catch {
   firebaseConfig = miConfiguracionLocal;
 }
 
@@ -58,6 +58,25 @@ const MESES = [
 
 const DIAS_SEMANA = ["Lu", "Ma", "Mi", "Ju", "Vi", "Sa", "Do"];
 
+const fechaReferenciaTrabajo = new Date(2026, 3, 24);
+
+const obtenerEstadoDia = (fecha) => {
+  const fechaISO = fecha.toISOString().split('T')[0];
+  const diffTime = fecha.getTime() - fechaReferenciaTrabajo.getTime();
+  const diffDays = Math.round(diffTime / (1000 * 3600 * 24));
+  const esTrabajo = ((diffDays % 4) + 4) % 4 === 0;
+  const diaDeLaSemana = fecha.getDay();
+  const esCursada = diaDeLaSemana >= 2 && diaDeLaSemana <= 4;
+
+  return {
+    esTrabajo,
+    esCursada,
+    esCoincidencia: esTrabajo && esCursada,
+    feriado: FERIADOS_2026[fechaISO] || null
+  };
+};
+
+
 export default function App() {
   const [user, setUser] = useState(null);
   const [notes, setNotes] = useState({});
@@ -83,7 +102,7 @@ export default function App() {
     initAuth();
     const unsubscribe = onAuthStateChanged(auth, (u) => {
       setUser(u);
-      if (!u && !loading) setLoading(false);
+      if (!u) setLoading(false);
     });
     return () => unsubscribe();
   }, []);
@@ -139,24 +158,6 @@ export default function App() {
     }
   };
 
-  const fechaReferenciaTrabajo = new Date(2026, 3, 24);
-
-  const obtenerEstadoDia = (fecha) => {
-    const fechaISO = fecha.toISOString().split('T')[0];
-    const diffTime = fecha.getTime() - fechaReferenciaTrabajo.getTime();
-    const diffDays = Math.round(diffTime / (1000 * 3600 * 24));
-    const esTrabajo = ((diffDays % 4) + 4) % 4 === 0;
-    const diaDeLaSemana = fecha.getDay();
-    const esCursada = diaDeLaSemana >= 2 && diaDeLaSemana <= 4;
-
-    return {
-      esTrabajo,
-      esCursada,
-      esCoincidencia: esTrabajo && esCursada,
-      feriado: FERIADOS_2026[fechaISO] || null
-    };
-  };
-
   const datosCalendario = useMemo(() => {
     const mesesVisuales = [];
     let contadorCoincidencias = 0;
@@ -187,7 +188,7 @@ export default function App() {
       mesesVisuales.push({ nombre: MESES[m], semanas });
     }
     return { meses: mesesVisuales, totalCoincidencias: contadorCoincidencias };
-  }, [user]);
+  }, []);
 
   if (loading) {
     return (
